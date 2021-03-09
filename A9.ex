@@ -1,3 +1,5 @@
+Import Map
+
 defmodule Interp do
     @type exprC :: NumC.t() | IdC.t() | StrC.t() | AppC.t() | LamC.t() | IfC.t() 
     @type environment :: Map
@@ -77,8 +79,7 @@ defmodule Interp do
              %StrV{str: str}
 
         %IdC {id: id} ->
-            lookup(id, env) 
-            #TODO! add lookup function
+            lookUp(id, env) 
 
         %LamC{args: args, body: body} ->
             %CloV{args: args, body: body, cloEnv: env}
@@ -95,15 +96,44 @@ defmodule Interp do
         %AppC{fun: fun, args: args} ->
             case interp(fun, env) do
                 %PrimV{pfun: pfun} ->
-                    #TODO map pfun
-                %CloV{args: args, body: body, cloEnv: cloEnv} ->
-                    if length(params) != length(args) do
-                        raise "WTUQ incorrect number of argument"
-                    end
-
-                    #TODO
+                    pfun.(Enum.map(args, fn exp -> interp(exp, env) end))
+                %CloV{args: params, body: body, cloEnv: cloEnv} ->
+                    argVals = Enum.map(args, fn exp -> interp(exp, env) end)
+                    interp(body, extend_env_multiple(cloEnv, params, argVals))
                 _ ->
                     raise "WTUQ invalid function call"
+        end
+    end
+
+    @doc """
+        Looks up a symbol in the environment
+    """
+    @spec lookUp(Interp.environment, Atom) : Interp.value
+    def lookUp(env, sym) do
+        case Map.get(env, sym, nil) do
+            nil -> raise "WTUQ: Unbound symbol" <> Atom.to_string(sym)
+            a -> a
+        end
+    end
+
+    @doc """
+        Returns new env with the given key, value association
+    """
+    @spec extend_env(Interp.environment, Atom, Interp.value) : Interp.environment
+    def extend_env(env, sym, val) do
+        env |> put(sym, val)
+    end
+
+    @doc """
+        Returns a new env with the given keys bound to the given values
+    """
+    @spec extend_env_multiple(Interp.environment, List(Atom), List(Interp.value)) : Interp.environment
+    def extend_env_multiple(env, syms, vals) do
+        case [syms, vals]
+            [] -> env
+            [[sym | sRest], [val | vRest]] ->
+                extend_env_multiple(extend_env(env, sym, val), sRest, vRest)
+            _ -> raise "WTUQ: Incorrect number of arguments provided"
         end
     end
 
@@ -120,17 +150,28 @@ defmodule Interp do
                     raise "WTUQ: Wrong arg types provided"
             end
         end
-    end    
+    end
+    # Wrapper for addition    
     add = fn num1, num2 -> %NumV{num: num1 + num2} end
+
+    # Wrapper for multiplication
     multiply = fn num1, num2 -> %NumV{num: num1 * num2} end
+
+    # Wrapper for subtraction
     sub = fn num1, num2 -> %NumV{num: num1 - num2} end
+
+    # Wrapper for <=
     lessThanEq = fn num1, num2 -> %BoolV{bool: num1 <= num2} end
+
+    # Wrapper for division, w/ check for divide by 0 err
     div = fn num1, num2 -> 
         case num2 do
             0 -> raise "WTUQ: Divide by 0 err"
             _ -> %NumV{num: num1 / num2}
         end
     end
+
+    # Wrapper for equals?
     eq = fn values ->
         case values do 
             [%NumV{num: n1}, %NumV{num: n2}] -> %BoolV{bool: n1 == n2}
@@ -140,6 +181,8 @@ defmodule Interp do
             _ -> raise "WTUQ: Incorrect use of equal?"
         end
     end
+
+    # Wrapper for an error function
     myError = fn values ->
         case values do
             [a] -> raise a
@@ -147,16 +190,17 @@ defmodule Interp do
         end
     end
 
+    # Base environment
     newEnv = %{
         true: %BoolV{bool: true},
         false: %BoolV{bool: false},
-        +: Interp.binom(add),
-        *: Interp.binom(multiply),
-        /: Interp.binom(div),
-        -: Interp.binom(sub),
-        <=: Interp.binop(lessThanEq),
-        equal?: eq,
-        error: myError
+        +: %PrimV{pfun: Interp.binom(add)},
+        *: %PrimV{pfun: Interp.binom(multiply)},
+        /: %PrimV{pfun: Interp.binom(div)},
+        -: %PrimV{pfun: Interp.binom(sub)},
+        <=: %PrimV{pfun: Interp.binop(lessThanEq)},
+        equal?: %PrimV{pfun: eq},
+        error: %PrimV{pfun: myError}
     }
     
 
