@@ -36,7 +36,7 @@ defmodule Interp do
              %StrV{str: str}
 
         %IdC {id: id} ->
-            lookUp(id, env) 
+            lookUp(env, id) 
 
         %LamC{args: args, body: body} ->
             %CloV{args: args, body: body, cloEnv: env}
@@ -122,7 +122,7 @@ defmodule Interp do
                 _ -> raise "Inccorect use of error"
             end
         end
-        
+
         %{
             true: %BoolV{bool: true},
             false: %BoolV{bool: false},
