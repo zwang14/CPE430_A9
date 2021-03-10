@@ -1,70 +1,87 @@
-Import Map
+import Map
+defmodule NumC do
+    defstruct num: nil
+    @type t :: %NumC{num: float}
+end
+
+defmodule IdC do
+    defstruct id: nil
+    @type t :: %IdC{id: atom}
+end
+
+defmodule StrC do
+    defstruct str: nil
+    @type t :: %StrC{str: String.t()}
+end
+
+defmodule LamC do
+    defstruct args: [], body: nil
+    @type t :: %LamC{args: list(:atom), body: Interp.exprC}
+end
+
+defmodule IfC do
+    defstruct test: nil, then: nil, el: nil
+    @type t :: %IfC{test: Interp.exprC, then: Interp.exprC, el: Interp.exprC}
+end
+
+defmodule AppC do
+    defstruct [:fun, :args]
+    @type t :: %AppC{fun: Interp.exprC, args: list(Interp.exprC)}
+end
+
+
+defmodule NumV do
+    defstruct num:
+    @type t :: %NumV{num: float}
+end
+
+defmodule BoolV do
+    defstruct bool:
+    @type t :: %BoolV{bool: boolean}
+end
+
+defmodule StrV do
+    defstruct str:
+    @type t :: %StrV{str: String.t}
+end
+
+defmodule PrimV do
+    defstruct pfun:
+    @type t :: %PrimV{pfun: (list(Interp.value) -> Interp.value)}
+end
+
+defmodule CloV do
+    defstruct [:args, :body, :cloEnv]
+    @type t :: %CloV{args: list(atom), body: Interp.exprC, cloEnv: Interp.environment}
+end
+
+defmodule Binding do
+    defstruct [:id, :val]
+    @type t :: %Binding{id: atom, val: Interp.value}
+end
+
+defmodule Utils do
+
+    @doc """
+        Basic wrapper for binomial mathematical expressions
+    """
+    @spec binop(Function) :: (list(Interp.value) -> Interp.value)
+    def binop(func) do
+        fn vals ->
+            case vals do
+                [%NumV{num: num1}, %NumV{num: num2}] ->
+                    func.(num1, num2)
+                _ ->
+                    raise "WTUQ: Wrong arg types provided"
+            end
+        end
+    end
+end
 
 defmodule Interp do
     @type exprC :: NumC.t() | IdC.t() | StrC.t() | AppC.t() | LamC.t() | IfC.t() 
     @type environment :: Map
     @type value :: NumV.t() | PrimV.t() | CloV.t() | BoolV.t() | StrV.t()
-
-    defmodule NumC do
-        defstruct val:
-        @type t :: %NumC{num: float}
-    end
-
-    defmodule IdC do
-        defstruct id:
-        @type t :: %IdC{id: atom}
-    end
-
-    defmodule StrC do
-        defstruct str:
-        @type t :: %StrC{str: String.t()}
-    end
-
-    defmodule LamC do
-        defstruct [:args, :body]
-        @type t :: %LamC{args: list(:atom), body: Interp.exprC}
-    end
-
-    defmodule IfC do
-        defstruct [:test, :then, :el]
-        @type t :: %IfC{test: Interp.exprC, then: Interp.exprC, el: Interp.exprC}
-    end
-
-    defmodule AppC do
-        defstruct [:fun, :args]
-        @type t :: %AppC{fun: Interp.exprC, args: list(Interp.exprC)}
-    end
-
-
-    defmodule NumV do
-        defstruct val:
-        @type t :: %NumV{val: float}
-    end
-
-    defmodule BoolV do
-        defstruct bool:
-        @type t :: %BoolV{bool: boolean}
-    end
-
-    defmodule StringV do
-        defstruct str:
-        @type t :: %StringV{str: String.t}
-    end
-
-    defmodule PrimV do
-        defstruct pfun:
-        @type t :: %PrimV{pfun: (list(Interp.value) -> Interp.value)}
-    end
-
-    defmodule CloV do
-        defstruct [:args, :body, :cloEnv]
-        @type t :: %CloV{args: list(atom), body: Interp.exprC, cloEnv: Interp.environment}
-    end
-
-    defmodule Binding do
-        defstruct [:id, :val]
-        @type t :: %Binding{id: atom, val: Interp.value}
-    end
 
     @doc """
     Evaluates ExprC and returns a Value
@@ -102,13 +119,14 @@ defmodule Interp do
                     interp(body, extend_env_multiple(cloEnv, params, argVals))
                 _ ->
                     raise "WTUQ invalid function call"
+            end
         end
     end
 
     @doc """
         Looks up a symbol in the environment
     """
-    @spec lookUp(Interp.environment, Atom) : Interp.value
+    @spec lookUp(Interp.environment, Atom) :: Interp.value
     def lookUp(env, sym) do
         case Map.get(env, sym, nil) do
             nil -> raise "WTUQ: Unbound symbol" <> Atom.to_string(sym)
@@ -119,7 +137,7 @@ defmodule Interp do
     @doc """
         Returns new env with the given key, value association
     """
-    @spec extend_env(Interp.environment, Atom, Interp.value) : Interp.environment
+    @spec extend_env(Interp.environment, Atom, Interp.value) :: Interp.environment
     def extend_env(env, sym, val) do
         env |> put(sym, val)
     end
@@ -127,33 +145,18 @@ defmodule Interp do
     @doc """
         Returns a new env with the given keys bound to the given values
     """
-    @spec extend_env_multiple(Interp.environment, List(Atom), List(Interp.value)) : Interp.environment
+    @spec extend_env_multiple(Interp.environment, List, List) :: Interp.environment
     def extend_env_multiple(env, syms, vals) do
-        case [syms, vals]
-            [] -> env
+        case [syms, vals] do
+            [[], []] -> env
             [[sym | sRest], [val | vRest]] ->
                 extend_env_multiple(extend_env(env, sym, val), sRest, vRest)
             _ -> raise "WTUQ: Incorrect number of arguments provided"
         end
     end
-
-    @doc """
-        Basic wrapper for binomial mathematical expressions
-    """
-    @spec binom(Function) :: (list(Interp.value) -> Interp.value)
-    def binom(func) do
-        fn vals ->
-            case vals do
-                [%NumV{num: num1}, %NumV{num: num2}] ->
-                    func.(num1, num2)
-                _ ->
-                    raise "WTUQ: Wrong arg types provided"
-            end
-        end
-    end
     # Wrapper for addition    
     add = fn num1, num2 -> %NumV{num: num1 + num2} end
-
+        
     # Wrapper for multiplication
     multiply = fn num1, num2 -> %NumV{num: num1 * num2} end
 
@@ -175,7 +178,7 @@ defmodule Interp do
     eq = fn values ->
         case values do 
             [%NumV{num: n1}, %NumV{num: n2}] -> %BoolV{bool: n1 == n2}
-            [%StringV{str: str1}, %StringV{str2}] -> 
+            [%StrV{str: str1}, %StrV{str: str2}] -> 
                 %BoolV{bool: String.equivalent?(str1, str2)}
             [%BoolV{bool: b1}, %BoolV{bool: b2}] -> %BoolV{bool: b1 == b2}
             _ -> raise "WTUQ: Incorrect use of equal?"
@@ -189,22 +192,16 @@ defmodule Interp do
             _ -> raise "Inccorect use of error"
         end
     end
-
     # Base environment
     newEnv = %{
         true: %BoolV{bool: true},
         false: %BoolV{bool: false},
-        +: %PrimV{pfun: Interp.binom(add)},
-        *: %PrimV{pfun: Interp.binom(multiply)},
-        /: %PrimV{pfun: Interp.binom(div)},
-        -: %PrimV{pfun: Interp.binom(sub)},
-        <=: %PrimV{pfun: Interp.binop(lessThanEq)},
+        +: %PrimV{pfun: Utils.binop(add)},
+        *: %PrimV{pfun: Utils.binop(multiply)},
+        /: %PrimV{pfun: Utils.binop(div)},
+        -: %PrimV{pfun: Utils.binop(sub)},
+        <=: %PrimV{pfun: Utils.binop(lessThanEq)},
         equal?: %PrimV{pfun: eq},
         error: %PrimV{pfun: myError}
     }
-    
-
-
 end
-
-
