@@ -154,54 +154,43 @@ defmodule Interp do
             _ -> raise "WTUQ: Incorrect number of arguments provided"
         end
     end
-    # Wrapper for addition    
-    add = fn num1, num2 -> %NumV{num: num1 + num2} end
-        
-    # Wrapper for multiplication
-    multiply = fn num1, num2 -> %NumV{num: num1 * num2} end
-
-    # Wrapper for subtraction
-    sub = fn num1, num2 -> %NumV{num: num1 - num2} end
-
-    # Wrapper for <=
-    lessThanEq = fn num1, num2 -> %BoolV{bool: num1 <= num2} end
-
-    # Wrapper for division, w/ check for divide by 0 err
-    div = fn num1, num2 -> 
-        case num2 do
-            0 -> raise "WTUQ: Divide by 0 err"
-            _ -> %NumV{num: num1 / num2}
-        end
-    end
-
-    # Wrapper for equals?
-    eq = fn values ->
-        case values do 
-            [%NumV{num: n1}, %NumV{num: n2}] -> %BoolV{bool: n1 == n2}
-            [%StrV{str: str1}, %StrV{str: str2}] -> 
-                %BoolV{bool: String.equivalent?(str1, str2)}
-            [%BoolV{bool: b1}, %BoolV{bool: b2}] -> %BoolV{bool: b1 == b2}
-            _ -> raise "WTUQ: Incorrect use of equal?"
-        end
-    end
-
-    # Wrapper for an error function
-    myError = fn values ->
-        case values do
-            [a] -> raise a
-            _ -> raise "Inccorect use of error"
-        end
-    end
     # Base environment
-    newEnv = %{
-        true: %BoolV{bool: true},
-        false: %BoolV{bool: false},
-        +: %PrimV{pfun: Utils.binop(add)},
-        *: %PrimV{pfun: Utils.binop(multiply)},
-        /: %PrimV{pfun: Utils.binop(div)},
-        -: %PrimV{pfun: Utils.binop(sub)},
-        <=: %PrimV{pfun: Utils.binop(lessThanEq)},
-        equal?: %PrimV{pfun: eq},
-        error: %PrimV{pfun: myError}
-    }
+    def new_env() do
+        add = fn num1, num2 -> %NumV{num: num1 + num2} end
+        multiply = fn num1, num2 -> %NumV{num: num1 * num2} end
+        sub = fn num1, num2 -> %NumV{num: num1 - num2} end
+        lessThanEq = fn num1, num2 -> %BoolV{bool: num1 <= num2} end
+        div = fn num1, num2 -> 
+            case num2 do
+                0 -> raise "WTUQ: Divide by 0 err"
+                _ -> %NumV{num: num1 / num2}
+            end
+        end
+        eq = fn values ->
+            case values do 
+                [%NumV{num: n1}, %NumV{num: n2}] -> %BoolV{bool: n1 == n2}
+                [%StrV{str: str1}, %StrV{str: str2}] -> 
+                    %BoolV{bool: String.equivalent?(str1, str2)}
+                [%BoolV{bool: b1}, %BoolV{bool: b2}] -> %BoolV{bool: b1 == b2}
+                _ -> raise "WTUQ: Incorrect use of equal?"
+            end
+        end
+        myError = fn values ->
+            case values do
+                [a] -> raise a
+                _ -> raise "Inccorect use of error"
+            end
+        end
+        %{
+            true: %BoolV{bool: true},
+            false: %BoolV{bool: false},
+            +: %PrimV{pfun: Utils.binop(add)},
+            *: %PrimV{pfun: Utils.binop(multiply)},
+            /: %PrimV{pfun: Utils.binop(div)},
+            -: %PrimV{pfun: Utils.binop(sub)},
+            <=: %PrimV{pfun: Utils.binop(lessThanEq)},
+            equal?: %PrimV{pfun: eq},
+            error: %PrimV{pfun: myError}
+        }
+    end
 end
