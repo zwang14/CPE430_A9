@@ -1,5 +1,42 @@
 import Map
 
+defmodule Serialize do
+    @doc """
+        Serialize function for Value types (after interp)
+    """
+    @spec serialize(Interp.value) :: String.t()
+    def serialize(v) do
+        case v do
+        
+        %NumV {num: num} ->
+            cond do
+                is_float(num) ->
+                    Float.to_string(num)
+                is_integer(num) ->
+                    Integer.to_string(num)
+            end
+        
+        %BoolV {bool: boolVal} ->
+            cond do
+                boolVal ->
+                    "true"
+                !boolVal ->
+                    "false"
+            end
+
+        %StrV {str: str} ->
+            str
+
+        %PrimV{pfun: _pfun} ->
+            "#primop"
+
+        %CloV{args: _args, body: _body, cloEnv: _cloEnv} ->
+            "#procedure"
+
+        end
+    end
+end
+
 defmodule Utils do
 
     @doc """

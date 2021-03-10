@@ -53,5 +53,34 @@ defmodule InterpTest do
     assert Interp.interp(if_false, base_env) == %NumV{num: 0}
   end
 
+  test "serialize correctly handles numV" do
+    num1 = %NumV{num: 10}
+    num2 = %NumV{num: 10.0}
+    assert Serialize.serialize(num1) == "10"
+    assert Serialize.serialize(num2) == "10.0"
+  end 
+
+  test "serialize correctly handles boolV" do
+    boolT = %BoolV{bool: true}
+    boolF = %BoolV{bool: false}
+    assert Serialize.serialize(boolT) == "true"
+    assert Serialize.serialize(boolF) == "false"
+  end
+
+  test "serialize correct handles strV" do
+    assert Serialize.serialize( %StrV{str: "hello world"} ) == "hello world"
+  end
+
+  test "serialize correctly handles binops" do
+    add = fn num1, num2 -> %NumV{num: num1 + num2} end
+    assert Serialize.serialize( %PrimV{pfun: add} ) == "#primop"
+  end
+
+  test "serialize correctly handles closures" do
+    params = [:a, :b, :c]
+    body = %NumC{num: 10}
+    cloEnv = Interp.new_env()
+    assert Serialize.serialize( %CloV{args: params, body: body, cloEnv: cloEnv} ) == "#procedure"
+  end
 
 end
